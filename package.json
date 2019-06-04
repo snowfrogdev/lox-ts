@@ -16,7 +16,8 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "start": "ts-node src/lox.ts"
+    "start": "ts-node src/lox.ts",
+    "generate-ast": "ts-node tool/generate-ast.ts"
   },
   "files": [
     "dist"
