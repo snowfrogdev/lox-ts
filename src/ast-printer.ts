@@ -1,8 +1,6 @@
 import * as Expr from "./expr";
-import { Token } from "./token";
-import { TokenType } from "./token-type";
 
-class AstPrinter implements Expr.Visitor<string> {
+export class AstPrinter implements Expr.Visitor<string> {
   print(expr: Expr.Expr): string {
     return expr.accept(this);
   }

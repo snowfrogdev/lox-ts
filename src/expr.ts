@@ -33,7 +33,7 @@ export class Grouping extends Expr {
 }
 
 export class Literal extends Expr {
-  constructor(readonly value: {}) {
+  constructor(readonly value: {} | undefined) {
     super();
   }
 
