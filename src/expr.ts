@@ -33,8 +33,12 @@ export class Grouping extends Expr {
 }
 
 export class Literal extends Expr {
-  constructor(readonly value: {} | undefined) {
+  constructor(readonly value: any) {
     super();
+  }
+
+  valueOf() {
+    return this.value;
   }
 
   accept<R>(visitor: Visitor<R>): R {     
@@ -51,3 +55,4 @@ export class Unary extends Expr {
       return visitor.visitUnaryExpr(this);
   }
 }
+

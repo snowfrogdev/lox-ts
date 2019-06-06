@@ -5,7 +5,6 @@ import { Token } from "./token";
 import { TokenType } from "./token-type";
 import { Parser } from "./parser";
 import { Expr } from "./expr";
-import { AstPrinter } from "./ast-printer";
 import { RuntimeError } from "./runtime-error";
 import { Interpreter } from "./interpreter";
 

@@ -84,7 +84,7 @@ export class Parser {
   private primary_(): Expr.Expr {
     if (this.match_(TokenType.FALSE)) return new Expr.Literal(false);
     if (this.match_(TokenType.TRUE)) return new Expr.Literal(true);
-    if (this.match_(TokenType.NIL)) return new Expr.Literal(undefined);
+    if (this.match_(TokenType.NIL)) return new Expr.Literal(null);
 
     if (this.match_(TokenType.NUMBER, TokenType.STRING)) {
       return new Expr.Literal(this.previous_().literal);

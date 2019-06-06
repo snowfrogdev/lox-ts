@@ -4,10 +4,10 @@ import { Token } from "./token";
 import { TokenType } from "./token-type";
 import { Lox } from "./lox";
 
-export class Interpreter implements Expr.Visitor<{}> {
+export class Interpreter implements Expr.Visitor<any> {
   interpret(expression: Expr.Expr) {
     try {
-      const value: {} = this.evaluate_(expression);
+      const value: any = this.evaluate_(expression);
       // 7.4 in the book uses a custom stringify function but we don't need it in JS
       console.log(value);
     } catch (error) {
@@ -15,12 +15,12 @@ export class Interpreter implements Expr.Visitor<{}> {
     }
   }
 
-  visitLiteralExpr(expr: Expr.Literal): {} {
+  visitLiteralExpr(expr: Expr.Literal): any {
     return expr;
   }
 
-  visitUnaryExpr(expr: Expr.Unary): {} {
-    const right: {} = this.evaluate_(expr.right);
+  visitUnaryExpr(expr: Expr.Unary): any {
+    const right: any = this.evaluate_(expr.right);
 
     switch (expr.operator.type) {
       case TokenType.BANG:
@@ -30,50 +30,55 @@ export class Interpreter implements Expr.Visitor<{}> {
         return -(<number>right);
     }
 
-    // Unreachable - the book uses null here
-    return {};
+    // Unreachable
+    return null;
   }
 
-  private checkNumberOperand_(operator: Token, operand: {}) {
-    if (typeof operand === "number") return;
+  private checkNumberOperand_(operator: Token, operand: any) {
+    if (typeof operand.valueOf() === "number") return;
 
     throw new RuntimeError(operator, "Operand must be a number.");
   }
 
-  private checkNumberOperands_(operator: Token, left: {}, right: {}) {
-    if (typeof left === "number" && typeof right === "number") return;
+  private checkNumberOperands_(operator: Token, left: any, right: any) {
+    if (
+      typeof left.valueOf() === "number" &&
+      typeof right.valueOf() === "number"
+    )
+      return;
 
     throw new RuntimeError(operator, "Operands must be numbers.");
   }
 
-  private isTruthy_(object: {}): boolean {
+  private isTruthy_(object: any): boolean {
     if (object === null || object === undefined) return false;
     if (typeof object === "boolean") return object;
     return true;
   }
 
-  private isEqual_(a: {}, b: {}): boolean {
+  private isEqual_(a: any, b: any): boolean {
     // nil is only equal to nil
-    if ((a === null || a === undefined) && (b === null || b === undefined))
+    if (
+      (a.valueOf() === null || a.valueOf() === undefined) &&
+      (b.valueOf() === null || b.valueOf() === undefined)
+    )
       return true;
-    if (a === null || a === undefined) return false;
+    if (a.valueOf() === null || a.valueOf() === undefined) return false;
 
-    return a === b;
+    return a.valueOf() === b.valueOf();
   }
 
-  
-
-  visitGroupingExpr(expr: Expr.Grouping): {} {
+  visitGroupingExpr(expr: Expr.Grouping): any {
     return this.evaluate_(expr.expression);
   }
 
-  private evaluate_(expr: Expr.Expr): {} {
+  private evaluate_(expr: Expr.Expr): any {
     return expr.accept(this);
   }
 
-  visitBinaryExpr(expr: Expr.Binary): {} {
-    const left: {} = this.evaluate_(expr.left);
-    const right: {} = this.evaluate_(expr.right);
+  visitBinaryExpr(expr: Expr.Binary): any {
+    const left: any = this.evaluate_(expr.left);
+    const right: any = this.evaluate_(expr.right);
 
     switch (expr.operator.type) {
       case TokenType.GREATER:
@@ -92,11 +97,17 @@ export class Interpreter implements Expr.Visitor<{}> {
         this.checkNumberOperands_(expr.operator, left, right);
         return <number>left - <number>right;
       case TokenType.PLUS:
-        if (typeof left === "number" && typeof right === "number") {
+        if (
+          typeof left.valueOf() === "number" &&
+          typeof right.valueOf() === "number"
+        ) {
           return left + right;
         }
 
-        if (typeof left === "string" && typeof right === "string") {
+        if (
+          typeof left.valueOf() === "string" &&
+          typeof right.valueOf() === "string"
+        ) {
           return left + right;
         }
 
@@ -116,7 +127,7 @@ export class Interpreter implements Expr.Visitor<{}> {
         return this.isEqual_(left, right);
     }
 
-    // Unreachable - the book uses null here
-    return {};
+    // Unreachable
+    return null;
   }
 }

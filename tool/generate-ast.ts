@@ -11,7 +11,7 @@ class GenerateAst {
     GenerateAst.defineAst_(outputDir, "Expr", [
       "Binary   - readonly left: Expr, readonly operator: Token, readonly right: Expr",
       "Grouping - readonly expression: Expr",
-      "Literal  - readonly value: {}",
+      "Literal  - readonly value: any",
       "Unary    - readonly operator: Token, readonly right: Expr"
     ]);
   }
@@ -57,6 +57,24 @@ ${GenerateAst.defineType_(baseName, types)}
       .map(type => {
         const className = type.split("-")[0].trim();
         const fields = type.split("-")[1].trim();
+        if (className === 'Literal') {
+          return `
+export class ${className} extends ${baseName} {
+  constructor(${fields}) {
+    super();
+  }
+
+  valueOf() {
+    return this.value;
+  }
+
+  accept<R>(visitor: Visitor<R>): R {     
+      return visitor.visit${className}${baseName}(this);
+  }
+}
+`;
+        }
+        
         return `
 export class ${className} extends ${baseName} {
   constructor(${fields}) {

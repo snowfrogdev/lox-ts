@@ -33,7 +33,7 @@ export class Scanner {
       this.scanToken_();
     }
 
-    this.tokens_.push(new Token(TokenType.EOF, "", undefined, this.line_));
+    this.tokens_.push(new Token(TokenType.EOF, "", null, this.line_));
     return this.tokens_;
   }
 
@@ -213,7 +213,7 @@ export class Scanner {
     return this.source_[this.current_ - 1];
   }
 
-  private addToken_(type: TokenType, literal?: {}) {
+  private addToken_(type: TokenType, literal?: any) {
     const text = this.source_.substring(this.start_, this.current_);
     this.tokens_.push(new Token(type, text, literal, this.line_));
   }
