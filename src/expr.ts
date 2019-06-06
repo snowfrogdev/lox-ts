@@ -51,4 +51,3 @@ export class Unary extends Expr {
       return visitor.visitUnaryExpr(this);
   }
 }
-

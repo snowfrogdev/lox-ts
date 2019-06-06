@@ -1,22 +1,22 @@
 {
   "name": "lox-ts",
   "version": "1.0.0",
-  "main": "dist/lox-ts.cjs.js",
-  "module": "dist/lox-ts.esm.js",
-  "browser": "dist/lox-ts.umd.js",
+  "main": "src/lox.ts",
   "devDependencies": {
+    "@types/jest": "^24.0.13",
+    "@types/node": "^12.0.5",
+    "jest": "^24.8.0",
     "rollup": "^1.0.0",
     "rollup-plugin-commonjs": "^9.2.0",
     "rollup-plugin-node-resolve": "^4.0.0",
     "rollup-plugin-typescript": "^1.0.0",
+    "ts-jest": "^24.0.2",
     "ts-node": "^7.0.1",
     "tslib": "^1.9.3",
     "typescript": "^3.2.2"
   },
   "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
-    "start": "ts-node src/lox.ts",
+    "start": "node dist/src/lox.js",
     "generate-ast": "ts-node tool/generate-ast.ts"
   },
   "files": [

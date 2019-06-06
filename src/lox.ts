@@ -6,9 +6,13 @@ import { TokenType } from "./token-type";
 import { Parser } from "./parser";
 import { Expr } from "./expr";
 import { AstPrinter } from "./ast-printer";
+import { RuntimeError } from "./runtime-error";
+import { Interpreter } from "./interpreter";
 
 export class Lox {
+  private static readonly interpreter: Interpreter = new Interpreter();
   static hadError = false;
+  static hadRuntimeError = false;
 
   static main() {
     const args = process.argv;
@@ -28,6 +32,7 @@ export class Lox {
 
     // Indicate an error in the exit code.
     if (Lox.hadError) process.exit(65);
+    if (Lox.hadRuntimeError) process.exit(70);
   }
 
   private static runPrompt() {
@@ -60,7 +65,7 @@ export class Lox {
     // Stop if there was a syntax error.
     if (this.hadError) return;
 
-    console.log(new AstPrinter().print(expression as Expr));
+    Lox.interpreter.interpret(expression as Expr);
   }
 
   static error(token: Token, message: string): void;
@@ -71,12 +76,15 @@ export class Lox {
     }
 
     if (lineOrToken.type === TokenType.EOF) {
-      return Lox.report(lineOrToken.line, ' at end', message);
+      return Lox.report(lineOrToken.line, " at end", message);
     }
 
-    Lox.report(lineOrToken.line, ` at '${lineOrToken.lexeme}'`, message)
+    Lox.report(lineOrToken.line, ` at '${lineOrToken.lexeme}'`, message);
+  }
 
-    
+  static runtimeError(error: RuntimeError) {
+    console.error(`${error.message}\n[line ${error.token.line}]`);
+    Lox.hadRuntimeError = true;
   }
 
   private static report(line: number, where: string, message: string) {
