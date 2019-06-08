@@ -1,15 +1,19 @@
 import * as Expr from "./expr";
+import { Lox } from "./lox";
 import { RuntimeError } from "./runtime-error";
+import * as Stmt from "./stmt";
 import { Token } from "./token";
 import { TokenType } from "./token-type";
-import { Lox } from "./lox";
+import { Environment } from "./environment";
 
-export class Interpreter implements Expr.Visitor<any> {
-  interpret(expression: Expr.Expr) {
+export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
+  private environment_ = new Environment();
+
+  interpret(statements: (Stmt.Stmt | null)[]): void {
     try {
-      const value: any = this.evaluate_(expression);
-      // 7.4 in the book uses a custom stringify function but we don't need it in JS
-      console.log(value);
+      for (const statement of statements) {
+        this.execute_(statement);
+      }
     } catch (error) {
       Lox.runtimeError(error);
     }
@@ -32,6 +36,10 @@ export class Interpreter implements Expr.Visitor<any> {
 
     // Unreachable
     return null;
+  }
+
+  visitVariableExpr(expr: Expr.Variable): any {
+    return this.environment_.get(expr.name);
   }
 
   private checkNumberOperand_(operator: Token, operand: any) {
@@ -68,12 +76,72 @@ export class Interpreter implements Expr.Visitor<any> {
     return a.valueOf() === b.valueOf();
   }
 
+  private stringify_(object: any): string {
+    if (object === null && object === undefined) return "nil";
+
+    if (object.value) return object.value;
+    return object.toString();
+  }
+
   visitGroupingExpr(expr: Expr.Grouping): any {
     return this.evaluate_(expr.expression);
   }
 
   private evaluate_(expr: Expr.Expr): any {
     return expr.accept(this);
+  }
+
+  private execute_(stmt: Stmt.Stmt | null): void {
+    stmt!.accept(this); // Temporary !, this should be removed
+  }
+
+  private executeBlock_(
+    statements: (Stmt.Stmt | null)[],
+    environment: Environment
+  ): void {
+    const previous: Environment = this.environment_;
+    try {
+      this.environment_ = environment;
+
+      for (const statement of statements) {
+        this.execute_(statement);
+      }
+    } finally {
+      this.environment_ = previous;
+    }
+  }
+
+  visitBlockStmt(stmt: Stmt.Block): null {
+    this.executeBlock_(stmt.statements, new Environment(this.environment_));
+    return null;
+  }
+
+  visitExpressionStmt(stmt: Stmt.Expression): null {
+    this.evaluate_(stmt.expression);
+    return null;
+  }
+
+  visitPrintStmt(stmt: Stmt.Print): null {
+    const value: any = this.evaluate_(stmt.expression);
+    console.log(this.stringify_(value));
+    return null;
+  }
+
+  visitVarStmt(stmt: Stmt.Var): null {
+    let value: any;
+    if (stmt.initializer) {
+      value = this.evaluate_(stmt.initializer);
+    }
+
+    this.environment_.define(stmt.name.lexeme, value);
+    return null;
+  }
+
+  visitAssignExpr(expr: Expr.Assign): any {
+    const value: any = this.evaluate_(expr.value);
+
+    this.environment_.assign(expr.name, value);
+    return value;
   }
 
   visitBinaryExpr(expr: Expr.Binary): any {

@@ -7,6 +7,7 @@ import { Parser } from "./parser";
 import { Expr } from "./expr";
 import { RuntimeError } from "./runtime-error";
 import { Interpreter } from "./interpreter";
+import { Stmt } from "./stmt";
 
 export class Lox {
   private static readonly interpreter: Interpreter = new Interpreter();
@@ -59,12 +60,12 @@ export class Lox {
     const scanner: Scanner = new Scanner(source);
     const tokens: Token[] = scanner.scanTokens();
     const parser: Parser = new Parser(tokens);
-    const expression: Expr | null = parser.parse();
+    const statements: (Stmt|null)[] = parser.parse();
 
     // Stop if there was a syntax error.
     if (this.hadError) return;
 
-    Lox.interpreter.interpret(expression as Expr);
+    Lox.interpreter.interpret(statements);
   }
 
   static error(token: Token, message: string): void;

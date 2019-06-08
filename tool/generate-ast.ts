@@ -9,10 +9,19 @@ class GenerateAst {
     }
     const outputDir = args[2];
     GenerateAst.defineAst_(outputDir, "Expr", [
+      "Assign   - readonly name: Token, readonly value: Expr",
       "Binary   - readonly left: Expr, readonly operator: Token, readonly right: Expr",
       "Grouping - readonly expression: Expr",
       "Literal  - readonly value: any",
-      "Unary    - readonly operator: Token, readonly right: Expr"
+      "Unary    - readonly operator: Token, readonly right: Expr",
+      "Variable - readonly name: Token"
+    ]);
+
+    GenerateAst.defineAst_(outputDir, "Stmt", [
+      "Block      - readonly statements: (Stmt | null)[]",
+      "Expression - readonly expression: Expr",
+      "Print      - readonly expression: Expr",
+      "Var        - readonly name: Token, readonly initializer?: Expr"
     ]);
   }
 
@@ -23,7 +32,11 @@ class GenerateAst {
   ) {
     const path = `${outputDir}/${baseName.toLowerCase()}.ts`;
 
-    const text = `
+    let text = "";
+    if (baseName === "Stmt") {
+      text = 'import { Expr } from "./expr";';
+    }
+    text += `
 import { Token } from "./token";
 
 ${GenerateAst.defineVisitor_(baseName, types)}
@@ -57,7 +70,7 @@ ${GenerateAst.defineType_(baseName, types)}
       .map(type => {
         const className = type.split("-")[0].trim();
         const fields = type.split("-")[1].trim();
-        if (className === 'Literal') {
+        if (className === "Literal") {
           return `
 export class ${className} extends ${baseName} {
   constructor(${fields}) {
@@ -74,7 +87,7 @@ export class ${className} extends ${baseName} {
 }
 `;
         }
-        
+
         return `
 export class ${className} extends ${baseName} {
   constructor(${fields}) {

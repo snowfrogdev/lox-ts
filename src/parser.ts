@@ -2,21 +2,100 @@ import { Token } from "./token";
 import * as Expr from "./expr";
 import { TokenType } from "./token-type";
 import { Lox } from "./lox";
+import * as Stmt from "./stmt";
 
 export class Parser {
   private current_ = 0;
   constructor(private readonly tokens_: Token[]) {}
 
-  parse(): Expr.Expr | null {
-    try {
-      return this.expression_();
-    } catch (error) {
-      return null
+  parse(): (Stmt.Stmt | null)[] {
+    const statements: (Stmt.Stmt | null)[] = [];
+    while (!this.isAtEnd_()) {
+      statements.push(this.declaration_());
     }
+
+    return statements;
   }
 
   private expression_(): Expr.Expr {
-    return this.equality_();
+    return this.assignment_();
+  }
+
+  private declaration_(): Stmt.Stmt | null {
+    try {
+      if (this.match_(TokenType.VAR)) return this.varDeclaration_();
+
+      return this.statement_();
+    } catch (error) {
+      this.synchronize_();
+      return null;
+    }
+  }
+
+  private statement_(): Stmt.Stmt {
+    if (this.match_(TokenType.PRINT)) return this.printStatement_();
+    if (this.match_(TokenType.LEFT_BRACE)) return new Stmt.Block(this.block_())
+
+    return this.expressionStatement_();
+  }
+
+  private printStatement_(): Stmt.Stmt {
+    const value: Expr.Expr = this.expression_();
+    this.consume_(TokenType.SEMICOLON, "Expect ';' after value.");
+    return new Stmt.Print(value);
+  }
+
+  private varDeclaration_(): Stmt.Stmt {
+    const name: Token = this.consume_(
+      TokenType.IDENTIFIER,
+      "Expect variable name."
+    );
+
+    let initializer: Expr.Expr | undefined;
+    if (this.match_(TokenType.EQUAL)) {
+      initializer = this.expression_();
+    }
+
+    this.consume_(
+      TokenType.SEMICOLON,
+      "Expect ';' after variable declaration."
+    );
+    return new Stmt.Var(name, initializer);
+  }
+
+  private expressionStatement_(): Stmt.Stmt {
+    const expr: Expr.Expr = this.expression_();
+    this.consume_(TokenType.SEMICOLON, "Expect ';' after expression.");
+    return new Stmt.Expression(expr);
+  }
+
+  private block_(): (Stmt.Stmt | null)[] {
+    const statements: (Stmt.Stmt | null)[] = []
+
+    while(!this.check_(TokenType.RIGHT_BRACE) && !this.isAtEnd_()) {
+      statements.push(this.declaration_())
+    }
+
+    this.consume_(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+    return statements;
+  }
+
+  private assignment_(): Expr.Expr {
+    const expr = this.equality_();
+
+    if (this.match_(TokenType.EQUAL)) {
+      const equals: Token = this.previous_();
+      const value: Expr.Expr = this.assignment_();
+
+      if (expr instanceof Expr.Variable) {
+        const name: Token = expr.name;
+        return new Expr.Assign(name, value);
+      }
+
+      this.error_(equals, "Invalid assignement target.");
+    }
+
+    return expr;
   }
 
   private equality_(): Expr.Expr {
@@ -90,13 +169,17 @@ export class Parser {
       return new Expr.Literal(this.previous_().literal);
     }
 
-    if (this.match_(TokenType.LEFT_PAREN)) {                               
-      const expr: Expr.Expr = this.expression_();                            
-      this.consume_(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
-      return new Expr.Grouping(expr);                      
+    if (this.match_(TokenType.IDENTIFIER)) {
+      return new Expr.Variable(this.previous_());
     }
 
-    throw this.error_(this.peek_(), 'Expect expression.');
+    if (this.match_(TokenType.LEFT_PAREN)) {
+      const expr: Expr.Expr = this.expression_();
+      this.consume_(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
+      return new Expr.Grouping(expr);
+    }
+
+    throw this.error_(this.peek_(), "Expect expression.");
   }
 
   private match_(...types: TokenType[]): boolean {
@@ -139,7 +222,7 @@ export class Parser {
   }
 
   private error_(token: Token, message: string): ParseError {
-    Lox.error(token, message)
+    Lox.error(token, message);
     return new ParseError();
   }
 
@@ -166,4 +249,4 @@ export class Parser {
   }
 }
 
-class ParseError extends Error { } 
+class ParseError extends Error {}

@@ -1,4 +1,4 @@
-import * as Expr from "./expr";
+/* import * as Expr from "./expr";
 
 export class AstPrinter implements Expr.Visitor<string> {
   print(expr: Expr.Expr): string {
@@ -32,3 +32,4 @@ export class AstPrinter implements Expr.Visitor<string> {
     return str;
   }
 }
+*/
