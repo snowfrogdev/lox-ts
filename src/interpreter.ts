@@ -1,10 +1,10 @@
-import * as Expr from "./expr";
-import { Lox } from "./lox";
-import { RuntimeError } from "./runtime-error";
-import * as Stmt from "./stmt";
-import { Token } from "./token";
-import { TokenType } from "./token-type";
-import { Environment } from "./environment";
+import * as Expr from './expr';
+import { Lox } from './lox';
+import { RuntimeError } from './runtime-error';
+import * as Stmt from './stmt';
+import { Token } from './token';
+import { TokenType } from './token-type';
+import { Environment } from './environment';
 
 export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
   private environment_ = new Environment();
@@ -24,15 +24,15 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
   }
 
   visitLogicalExpr(expr: Expr.Logical): any {
-    const left = this.evaluate_(expr.left)
+    const left = this.evaluate_(expr.left);
 
     if (expr.operator.type === TokenType.OR) {
-      if (this.isTruthy_(left)) return left
+      if (this.isTruthy_(left)) return left;
     } else {
-      if (!this.isTruthy_(left)) return left
+      if (!this.isTruthy_(left)) return left;
     }
 
-    return this.evaluate_(expr.right)
+    return this.evaluate_(expr.right);
   }
 
   visitUnaryExpr(expr: Expr.Unary): any {
@@ -55,24 +55,20 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
   }
 
   private checkNumberOperand_(operator: Token, operand: any) {
-    if (typeof operand.valueOf() === "number") return;
+    if (typeof operand.valueOf() === 'number') return;
 
-    throw new RuntimeError(operator, "Operand must be a number.");
+    throw new RuntimeError(operator, 'Operand must be a number.');
   }
 
   private checkNumberOperands_(operator: Token, left: any, right: any) {
-    if (
-      typeof left.valueOf() === "number" &&
-      typeof right.valueOf() === "number"
-    )
-      return;
+    if (typeof left.valueOf() === 'number' && typeof right.valueOf() === 'number') return;
 
-    throw new RuntimeError(operator, "Operands must be numbers.");
+    throw new RuntimeError(operator, 'Operands must be numbers.');
   }
 
   private isTruthy_(object: any): boolean {
     if (object === null || object === undefined) return false;
-    if (typeof object === "boolean") return object;
+    if (typeof object === 'boolean') return object;
     return true;
   }
 
@@ -89,9 +85,9 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
   }
 
   private stringify_(object: any): string {
-    if (object === null && object === undefined) return "nil";
+    if (object === null && object === undefined) return 'nil';
 
-    if (object.value) return object.value;
+    if (object.hasOwnProperty('value')) return object.value;
     return object.toString();
   }
 
@@ -107,10 +103,7 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
     stmt!.accept(this); // Temporary !, this should be removed
   }
 
-  private executeBlock_(
-    statements: (Stmt.Stmt | null)[],
-    environment: Environment
-  ): void {
+  private executeBlock_(statements: (Stmt.Stmt | null)[], environment: Environment): void {
     const previous: Environment = this.environment_;
     try {
       this.environment_ = environment;
@@ -135,9 +128,9 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
 
   visitIfStmt(stmt: Stmt.If): null {
     if (this.isTruthy_(this.evaluate_(stmt.condition))) {
-      this.execute_(stmt.thenBranch)
+      this.execute_(stmt.thenBranch);
     } else if (stmt.elseBranch) {
-      this.execute_(stmt.elseBranch)
+      this.execute_(stmt.elseBranch);
     }
     return null;
   }
@@ -155,6 +148,13 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
     }
 
     this.environment_.define(stmt.name.lexeme, value);
+    return null;
+  }
+
+  visitWhileStmt(stmt: Stmt.While): null {
+    while (this.isTruthy_(this.evaluate_(stmt.condition))) {
+      this.execute_(stmt.body);
+    }
     return null;
   }
 
@@ -186,24 +186,15 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
         this.checkNumberOperands_(expr.operator, left, right);
         return <number>left - <number>right;
       case TokenType.PLUS:
-        if (
-          typeof left.valueOf() === "number" &&
-          typeof right.valueOf() === "number"
-        ) {
+        if (typeof left.valueOf() === 'number' && typeof right.valueOf() === 'number') {
           return left + right;
         }
 
-        if (
-          typeof left.valueOf() === "string" &&
-          typeof right.valueOf() === "string"
-        ) {
+        if (typeof left.valueOf() === 'string' && typeof right.valueOf() === 'string') {
           return left + right;
         }
 
-        throw new RuntimeError(
-          expr.operator,
-          "Operands must be two numbers or two strings."
-        );
+        throw new RuntimeError(expr.operator, 'Operands must be two numbers or two strings.');
       case TokenType.SLASH:
         this.checkNumberOperands_(expr.operator, left, right);
         return <number>left / <number>right;

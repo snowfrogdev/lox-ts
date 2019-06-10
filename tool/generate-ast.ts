@@ -23,7 +23,8 @@ class GenerateAst {
       'Expression - readonly expression: Expr',
       'If         - readonly condition: Expr, readonly thenBranch: Stmt, readonly elseBranch?: Stmt',
       'Print      - readonly expression: Expr',
-      'Var        - readonly name: Token, readonly initializer?: Expr'
+      'Var        - readonly name: Token, readonly initializer?: Expr',
+      'While      - readonly condition: Expr, readonly body: Stmt'
     ]);
   }
 

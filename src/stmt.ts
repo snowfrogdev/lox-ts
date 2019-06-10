@@ -7,6 +7,7 @@ export interface Visitor<R> {
   visitIfStmt(stmt: If): R;
   visitPrintStmt(stmt: Print): R;
   visitVarStmt(stmt: Var): R;
+  visitWhileStmt(stmt: While): R;
 }
 
 export abstract class Stmt {
@@ -61,6 +62,16 @@ export class Var extends Stmt {
 
   accept<R>(visitor: Visitor<R>): R {     
       return visitor.visitVarStmt(this);
+  }
+}
+
+export class While extends Stmt {
+  constructor(readonly condition: Expr, readonly body: Stmt) {
+    super();
+  }
+
+  accept<R>(visitor: Visitor<R>): R {     
+      return visitor.visitWhileStmt(this);
   }
 }
 
