@@ -23,6 +23,18 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
     return expr;
   }
 
+  visitLogicalExpr(expr: Expr.Logical): any {
+    const left = this.evaluate_(expr.left)
+
+    if (expr.operator.type === TokenType.OR) {
+      if (this.isTruthy_(left)) return left
+    } else {
+      if (!this.isTruthy_(left)) return left
+    }
+
+    return this.evaluate_(expr.right)
+  }
+
   visitUnaryExpr(expr: Expr.Unary): any {
     const right: any = this.evaluate_(expr.right);
 
@@ -118,6 +130,15 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
 
   visitExpressionStmt(stmt: Stmt.Expression): null {
     this.evaluate_(stmt.expression);
+    return null;
+  }
+
+  visitIfStmt(stmt: Stmt.If): null {
+    if (this.isTruthy_(this.evaluate_(stmt.condition))) {
+      this.execute_(stmt.thenBranch)
+    } else if (stmt.elseBranch) {
+      this.execute_(stmt.elseBranch)
+    }
     return null;
   }
 

@@ -1,8 +1,8 @@
-import { Token } from "./token";
-import * as Expr from "./expr";
-import { TokenType } from "./token-type";
-import { Lox } from "./lox";
-import * as Stmt from "./stmt";
+import { Token } from './token';
+import * as Expr from './expr';
+import { TokenType } from './token-type';
+import { Lox } from './lox';
+import * as Stmt from './stmt';
 
 export class Parser {
   private current_ = 0;
@@ -33,10 +33,25 @@ export class Parser {
   }
 
   private statement_(): Stmt.Stmt {
+    if (this.match_(TokenType.IF)) return this.ifStatement_();
     if (this.match_(TokenType.PRINT)) return this.printStatement_();
-    if (this.match_(TokenType.LEFT_BRACE)) return new Stmt.Block(this.block_())
+    if (this.match_(TokenType.LEFT_BRACE)) return new Stmt.Block(this.block_());
 
     return this.expressionStatement_();
+  }
+
+  private ifStatement_(): Stmt.Stmt {
+    this.consume_(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+    const condition: Expr.Expr = this.expression_();
+    this.consume_(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
+
+    const thenBranch: Stmt.Stmt = this.statement_();
+    let elseBranch: Stmt.Stmt | undefined;
+    if (this.match_(TokenType.ELSE)) {
+      elseBranch = this.statement_();
+    }
+
+    return new Stmt.If(condition, thenBranch, elseBranch);
   }
 
   private printStatement_(): Stmt.Stmt {
@@ -46,20 +61,14 @@ export class Parser {
   }
 
   private varDeclaration_(): Stmt.Stmt {
-    const name: Token = this.consume_(
-      TokenType.IDENTIFIER,
-      "Expect variable name."
-    );
+    const name: Token = this.consume_(TokenType.IDENTIFIER, 'Expect variable name.');
 
     let initializer: Expr.Expr | undefined;
     if (this.match_(TokenType.EQUAL)) {
       initializer = this.expression_();
     }
 
-    this.consume_(
-      TokenType.SEMICOLON,
-      "Expect ';' after variable declaration."
-    );
+    this.consume_(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
     return new Stmt.Var(name, initializer);
   }
 
@@ -70,10 +79,10 @@ export class Parser {
   }
 
   private block_(): (Stmt.Stmt | null)[] {
-    const statements: (Stmt.Stmt | null)[] = []
+    const statements: (Stmt.Stmt | null)[] = [];
 
-    while(!this.check_(TokenType.RIGHT_BRACE) && !this.isAtEnd_()) {
-      statements.push(this.declaration_())
+    while (!this.check_(TokenType.RIGHT_BRACE) && !this.isAtEnd_()) {
+      statements.push(this.declaration_());
     }
 
     this.consume_(TokenType.RIGHT_BRACE, "Expect '}' after block.");
@@ -81,7 +90,7 @@ export class Parser {
   }
 
   private assignment_(): Expr.Expr {
-    const expr = this.equality_();
+    const expr: Expr.Expr = this.or_();
 
     if (this.match_(TokenType.EQUAL)) {
       const equals: Token = this.previous_();
@@ -92,7 +101,31 @@ export class Parser {
         return new Expr.Assign(name, value);
       }
 
-      this.error_(equals, "Invalid assignement target.");
+      this.error_(equals, 'Invalid assignement target.');
+    }
+
+    return expr;
+  }
+
+  private or_(): Expr.Expr {
+    let expr: Expr.Expr = this.and_();
+
+    while (this.match_(TokenType.OR)) {
+      const operator: Token = this.previous_();
+      const right = this.and_();
+      expr = new Expr.Logical(expr, operator, right);
+    }
+
+    return expr;
+  }
+
+  private and_(): Expr.Expr {
+    let expr: Expr.Expr = this.equality_();
+
+    while (this.match_(TokenType.AND)) {
+      const operator = this.previous_();
+      const right = this.equality_();
+      expr = new Expr.Logical(expr, operator, right);
     }
 
     return expr;
@@ -113,12 +146,7 @@ export class Parser {
   private comparison_(): Expr.Expr {
     let expr: Expr.Expr = this.addition_();
     while (
-      this.match_(
-        TokenType.GREATER,
-        TokenType.GREATER_EQUAL,
-        TokenType.LESS,
-        TokenType.LESS_EQUAL
-      )
+      this.match_(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL)
     ) {
       const operator: Token = this.previous_();
       const right: Expr.Expr = this.addition_();
@@ -179,7 +207,7 @@ export class Parser {
       return new Expr.Grouping(expr);
     }
 
-    throw this.error_(this.peek_(), "Expect expression.");
+    throw this.error_(this.peek_(), 'Expect expression.');
   }
 
   private match_(...types: TokenType[]): boolean {
