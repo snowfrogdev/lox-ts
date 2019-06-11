@@ -23,6 +23,7 @@ export class Parser {
 
   private declaration_(): Stmt.Stmt | null {
     try {
+      if (this.match_(TokenType.FUN)) return this.function_("function")
       if (this.match_(TokenType.VAR)) return this.varDeclaration_();
 
       return this.statement_();
@@ -36,6 +37,7 @@ export class Parser {
     if (this.match_(TokenType.FOR)) return this.forStatement_();
     if (this.match_(TokenType.IF)) return this.ifStatement_();
     if (this.match_(TokenType.PRINT)) return this.printStatement_();
+    if (this.match_(TokenType.RETURN)) return this.returnStatement_();
     if (this.match_(TokenType.WHILE)) return this.whileStatement_();
     if (this.match_(TokenType.LEFT_BRACE)) return new Stmt.Block(this.block_());
 
@@ -102,6 +104,17 @@ export class Parser {
     return new Stmt.Print(value);
   }
 
+  private returnStatement_(): Stmt.Stmt {
+    const keyword: Token = this.previous_();
+    let value: Expr.Expr | undefined
+    if(!this.check_(TokenType.SEMICOLON)) {
+      value = this.expression_()
+    }
+
+    this.consume_(TokenType.SEMICOLON, "Expect ';' after return value.");
+    return new Stmt.Return(keyword, value)
+  }
+
   private varDeclaration_(): Stmt.Stmt {
     const name: Token = this.consume_(TokenType.IDENTIFIER, 'Expect variable name.');
 
@@ -127,6 +140,26 @@ export class Parser {
     const expr: Expr.Expr = this.expression_();
     this.consume_(TokenType.SEMICOLON, "Expect ';' after expression.");
     return new Stmt.Expression(expr);
+  }
+
+  private function_(kind: string): Stmt.Function {
+    const name: Token = this.consume_(TokenType.IDENTIFIER, `Expect ${kind} name.`)
+    this.consume_(TokenType.LEFT_PAREN, `Expect ${kind} name.`);
+    const parameters: Token[] = []
+    if(!this.check_(TokenType.RIGHT_PAREN)) {
+      do {
+        if (parameters.length >= 8) {
+          this.error_(this.peek_(), "Cannot have more than 8 parameters.")
+        }
+
+        parameters.push(this.consume_(TokenType.IDENTIFIER, 'Expect parameter name.'))
+      } while(this.match_(TokenType.COMMA))
+    }
+    this.consume_(TokenType.RIGHT_PAREN, "Expect ')' after parameters.");
+
+    this.consume_(TokenType.LEFT_BRACE, `Expect '{' before ${kind} body`)
+    const body: (Stmt.Stmt| null)[] = this.block_()
+    return new Stmt.Function(name, parameters, body)
   }
 
   private block_(): (Stmt.Stmt | null)[] {
@@ -236,7 +269,37 @@ export class Parser {
       return new Expr.Unary(operator, right);
     }
 
-    return this.primary_();
+    return this.call_();
+  }
+
+  private finishCall_(callee: Expr.Expr): Expr.Expr {
+    const args: Expr.Expr[] = []
+    if(!this.check_(TokenType.RIGHT_PAREN)) {
+      do {
+        if (args.length >= 8) {
+          this.error_(this.peek_(), 'Cannot have more than 8 arguments.');
+        }
+        args.push(this.expression_());
+      } while (this.match_(TokenType.COMMA))
+    }
+
+    const paren = this.consume_(TokenType.RIGHT_PAREN, "Expect ')' after arguments.");
+
+    return new Expr.Call(callee, paren, args)
+  }
+
+  private call_(): Expr.Expr {
+    let expr: Expr.Expr = this.primary_();
+
+    while (true) {
+      if (this.match_(TokenType.LEFT_PAREN)) {
+        expr = this.finishCall_(expr);
+      } else {
+        break;
+      }
+    }
+
+    return expr;
   }
 
   private primary_(): Expr.Expr {
