@@ -180,7 +180,9 @@ export class Resolver implements Expr.Visitor<null>, Stmt.Visitor<null> {
 
   private resolveLocal_(expr: Expr.Expr, name: Token): void {
     for (let i = this.scopes_.length - 1; i >= 0; i--) {
-      this.interpreter_.resolve(expr, this.scopes_.length - 1 - i);
+      if (this.scopes_[i].has(name.lexeme)) {
+        this.interpreter_.resolve(expr, this.scopes_.length - 1 - i);
+      }      
       return;
     }
   }
