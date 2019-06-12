@@ -2,12 +2,12 @@ import { Token } from "./token";
 import { RuntimeError } from "./runtime-error";
 
 export class Environment {
-  private readonly values_ = new Map<string, any>();
+  readonly values = new Map<string, any>();
   constructor(readonly enclosing?: Environment) {}
 
   get(name: Token): any {
-    if (this.values_.has(name.lexeme)) {
-      return this.values_.get(name.lexeme);
+    if (this.values.has(name.lexeme)) {
+      return this.values.get(name.lexeme);
     }
 
     if (this.enclosing) return this.enclosing.get(name)
@@ -16,8 +16,8 @@ export class Environment {
   }
 
   assign(name: Token, value: any) {
-    if (this.values_.has(name.lexeme)) {
-      this.values_.set(name.lexeme, value);
+    if (this.values.has(name.lexeme)) {
+      this.values.set(name.lexeme, value);
       return;
     }
 
@@ -30,6 +30,22 @@ export class Environment {
   }
 
   define(name: string, value: any): void {
-    this.values_.set(name, value);
+    this.values.set(name, value);
+  }
+
+  ancestor(distance: number): Environment {
+    let environement: Environment = this
+    for(let i = 0; i < distance; i++) {
+      environement = environement.enclosing as Environment
+    }
+    return environement
+  }
+
+  getAt(distance: number, name: string): any {
+    return this.ancestor(distance).values.get(name)
+  }
+
+  assignAt(distance: number, name: Token, value: any) {
+    this.ancestor(distance).values.set(name.lexeme, value)
   }
 }

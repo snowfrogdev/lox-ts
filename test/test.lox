@@ -1,13 +1,10 @@
-fun makePoint(x, y) {
-  fun closure(method) {
-    if (method == "x") return x;
-    if (method == "y") return y;
-    print "unknown method " + method;
+var a = "global";
+{
+  fun showA() {
+    print a;
   }
 
-  return closure;
+  showA();
+  var a = "block";
+  showA();
 }
-
-var point = makePoint(2, 3);
-print point("x"); // "2".
-print point("y"); // "3".

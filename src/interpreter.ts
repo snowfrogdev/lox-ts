@@ -12,6 +12,7 @@ import { Return } from './return';
 export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
   readonly globals: Environment = new Environment();
   private environment_: Environment = this.globals;
+  private readonly locals_: Map<Expr.Expr, number> = new Map();
 
   constructor() {
     this.globals.define(
@@ -74,7 +75,16 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
   }
 
   visitVariableExpr(expr: Expr.Variable): any {
-    return this.environment_.get(expr.name);
+    return this.lookUpVariable_(expr.name, expr);
+  }
+
+  private lookUpVariable_(name: Token, expr: Expr.Expr): any {
+    const distance = this.locals_.get(expr);
+    if (distance !== undefined && distance !== null) {
+      return this.environment_.getAt(distance, name.lexeme);
+    } else {
+      return this.globals.get(name);
+    }
   }
 
   private checkNumberOperand_(operator: Token, operand: any) {
@@ -108,7 +118,7 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
   }
 
   private stringify_(object: any): string {
-    if (object === null && object === undefined) return 'nil';
+    if (object === null || object === undefined) return 'nil';
 
     if (object.hasOwnProperty('value')) return object.value.toString();
     return object.toString();
@@ -124,6 +134,10 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
 
   private execute_(stmt: Stmt.Stmt | null): void {
     stmt!.accept(this); // Temporary !, this should be removed
+  }
+
+  resolve(expr: Expr.Expr, depth: number): void {
+    this.locals_.set(expr, depth);
   }
 
   executeBlock(statements: (Stmt.Stmt | null)[], environment: Environment): void {
@@ -171,10 +185,10 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
   }
 
   visitReturnStmt(stmt: Stmt.Return): null {
-    let value: any
-    if(stmt.value) value = this.evaluate_(stmt.value)
+    let value: any;
+    if (stmt.value) value = this.evaluate_(stmt.value);
 
-    throw new Return(value)
+    throw new Return(value);
   }
 
   visitVarStmt(stmt: Stmt.Var): null {
@@ -197,7 +211,12 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
   visitAssignExpr(expr: Expr.Assign): any {
     const value: any = this.evaluate_(expr.value);
 
-    this.environment_.assign(expr.name, value);
+    const distance = this.locals_.get(expr);
+    if (distance !== undefined) {
+      this.environment_.assignAt(distance, expr.name, value);
+    } else {
+      this.globals.assign(expr.name, value);
+    }
     return value;
   }
 
