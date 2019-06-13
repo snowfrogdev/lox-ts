@@ -1,29 +1,17 @@
-class Math {
-  init(a) {
-    this.a = a;
-  }
-
-  add(b) {
-    return this.a + b;
-  }
-
-  subtract(b) {
-    return this.a - b;
-  }
-
-  multiplyBy(b) {
-    return this.a * b;
-  }
-
-  divideBy(b) {
-    return this.a / b;
+class Doughnut {
+  cook() {
+    print "Fry until golden brown.";
   }
 }
 
-var math = Math(50);
-print math.a; // 50
-print math.add(25); // 75
-math.a = 100;
-print math.subtract(10); // 90
-print math.multiplyBy(2); // 200
-print math.divideBy(0.1); // 1000
+class BostonCream < Doughnut {
+  cook() {
+    super.cook();
+    print "Pipe full of custard and coat with chocolate.";
+  }
+}
+
+BostonCream().cook();
+// Prints:
+// Fry until golden brown.
+// Pipe full of custard and coat with chocolate.

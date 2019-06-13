@@ -17,6 +17,7 @@ class GenerateAst {
       'Literal  - readonly value: any',
       'Logical  - readonly left: Expr, readonly operator: Token, readonly right: Expr',
       'Set      - readonly object: Expr, readonly name: Token, readonly value: Expr',
+      'Super    - readonly keyword: Token, readonly method: Token',
       'This     - readonly keyword: Token',
       'Unary    - readonly operator: Token, readonly right: Expr',
       'Variable - readonly name: Token'
@@ -24,7 +25,7 @@ class GenerateAst {
 
     GenerateAst.defineAst_(outputDir, 'Stmt', [
       'Block      - readonly statements: (Stmt | null)[]',
-      'Class      - readonly name: Token, readonly methods: Function[]',
+      'Class      - readonly name: Token, readonly superclass: Variable | undefined, readonly methods: Function[]',
       'Expression - readonly expression: Expr',
       'Function   - readonly name: Token, readonly params: Token[], readonly body: (Stmt | null)[]',
       'If         - readonly condition: Expr, readonly thenBranch: Stmt, readonly elseBranch?: Stmt',
@@ -40,7 +41,8 @@ class GenerateAst {
 
     let text = '';
     if (baseName === 'Stmt') {
-      text = 'import { Expr } from "./expr";';
+      text = `import { Expr } from "./expr";
+import { Variable } from "./expr"`;
     }
     text += `
 import { Token } from "./token";

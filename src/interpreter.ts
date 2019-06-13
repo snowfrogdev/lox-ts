@@ -73,6 +73,21 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
     return value;
   }
 
+  visitSuperExpr(expr: Expr.Super): any {
+    const distance: number = this.locals_.get(expr) as number;
+    const superclass: LoxClass = this.environment_.getAt(distance, 'super');
+
+    // "this" is always one level nearer than "super"'s environment.
+    const object: LoxInstance = this.environment_.getAt(distance - 1, 'this');
+
+    const method: LoxFunction | null = superclass.findMethod(expr.method.lexeme);
+
+    if (!method) {
+      throw new RuntimeError(expr.method, `Undefined property '${expr.method.lexeme}'.`)
+    }
+    return method.bind(object);
+  }
+
   visitThisExpr(expr: Expr.This): any {
     return this.lookUpVariable_(expr.keyword, expr);
   }
@@ -177,14 +192,32 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
   }
 
   visitClassStmt(stmt: Stmt.Class): null {
+    let superclass: any;
+    if (stmt.superclass) {
+      superclass = this.evaluate_(stmt.superclass);
+      if (!(superclass instanceof LoxClass)) {
+        throw new RuntimeError(stmt.superclass.name, 'Superclass must be a class.');
+      }
+    }
     this.environment_.define(stmt.name.lexeme, null);
+
+    if (stmt.superclass) {
+      this.environment_ = new Environment(this.environment_);
+      this.environment_.define('super', superclass);
+    }
+
     const methods: Map<string, LoxFunction> = new Map();
     for (const method of stmt.methods) {
       const func = new LoxFunction(method, this.environment_, method.name.lexeme === 'init');
       methods.set(method.name.lexeme, func);
     }
 
-    const klass: LoxClass = new LoxClass(stmt.name.lexeme, methods);
+    const klass: LoxClass = new LoxClass(stmt.name.lexeme, <LoxClass>superclass, methods);
+
+    if (superclass) {
+      this.environment_ = this.environment_.enclosing as Environment;
+    }
+
     this.environment_.assign(stmt.name, klass);
     return null;
   }

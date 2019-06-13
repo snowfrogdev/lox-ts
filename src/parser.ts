@@ -36,6 +36,12 @@ export class Parser {
 
   private classDeclaration_(): Stmt.Stmt {
     const name: Token = this.consume_(TokenType.IDENTIFIER, 'Expect class name.');
+
+    let superclass: Expr.Variable | undefined;
+    if (this.match_(TokenType.LESS)) {
+      this.consume_(TokenType.IDENTIFIER, 'Expect superclass name.');
+      superclass = new Expr.Variable(this.previous_());
+    }
     this.consume_(TokenType.LEFT_BRACE, "Expect '{' before class body.");
 
     const methods: Stmt.Function[] = [];
@@ -45,7 +51,7 @@ export class Parser {
 
     this.consume_(TokenType.RIGHT_BRACE, "Expect '}' after class body.");
 
-    return new Stmt.Class(name, methods);
+    return new Stmt.Class(name, superclass, methods);
   }
 
   private statement_(): Stmt.Stmt {
@@ -200,7 +206,7 @@ export class Parser {
         return new Expr.Assign(name, value);
       } else if (expr instanceof Expr.Get) {
         const get: Expr.Get = expr;
-        return new Expr.Set(get.object, get.name, value)
+        return new Expr.Set(get.object, get.name, value);
       }
 
       this.error_(equals, 'Invalid assignement target.');
@@ -330,6 +336,13 @@ export class Parser {
 
     if (this.match_(TokenType.NUMBER, TokenType.STRING)) {
       return new Expr.Literal(this.previous_().literal);
+    }
+
+    if (this.match_(TokenType.SUPER)) {
+      const keyword = this.previous_();
+      this.consume_(TokenType.DOT, "Expect '.' after 'super'.");
+      const method = this.consume_(TokenType.IDENTIFIER, 'Expect superclass method name.');
+      return new Expr.Super(keyword, method);
     }
 
     if (this.match_(TokenType.THIS)) {

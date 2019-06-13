@@ -4,13 +4,21 @@ import { LoxInstance } from './lox-instance';
 import { LoxFunction } from './lox-function';
 
 export class LoxClass extends LoxCallable {
-  constructor(readonly name: string, private readonly methods_: Map<string, LoxFunction>) {
+  constructor(
+    readonly name: string,
+    readonly superclass: LoxClass,
+    private readonly methods_: Map<string, LoxFunction>
+  ) {
     super();
   }
 
   findMethod(name: string): LoxFunction | null {
     if (this.methods_.has(name)) {
       return this.methods_.get(name) as LoxFunction;
+    }
+
+    if (this.superclass) {
+      return this.superclass.findMethod(name);
     }
 
     return null;

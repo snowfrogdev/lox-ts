@@ -1,4 +1,5 @@
 import { Expr } from "./expr";
+import { Variable } from "./expr"
 import { Token } from "./token";
 
 export interface Visitor<R> {
@@ -29,7 +30,7 @@ export class Block extends Stmt {
 }
 
 export class Class extends Stmt {
-  constructor(readonly name: Token, readonly methods: Function[]) {
+  constructor(readonly name: Token, readonly superclass: Variable | undefined, readonly methods: Function[]) {
     super();
   }
 
