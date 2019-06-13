@@ -23,7 +23,8 @@ export class Parser {
 
   private declaration_(): Stmt.Stmt | null {
     try {
-      if (this.match_(TokenType.FUN)) return this.function_("function")
+      if (this.match_(TokenType.CLASS)) return this.classDeclaration_();
+      if (this.match_(TokenType.FUN)) return this.function_('function');
       if (this.match_(TokenType.VAR)) return this.varDeclaration_();
 
       return this.statement_();
@@ -31,6 +32,20 @@ export class Parser {
       this.synchronize_();
       return null;
     }
+  }
+
+  private classDeclaration_(): Stmt.Stmt {
+    const name: Token = this.consume_(TokenType.IDENTIFIER, 'Expect class name.');
+    this.consume_(TokenType.LEFT_BRACE, "Expect '{' before class body.");
+
+    const methods: Stmt.Function[] = [];
+    while (!this.check_(TokenType.RIGHT_BRACE) && !this.isAtEnd_()) {
+      methods.push(this.function_('method'));
+    }
+
+    this.consume_(TokenType.RIGHT_BRACE, "Expect '}' after class body.");
+
+    return new Stmt.Class(name, methods);
   }
 
   private statement_(): Stmt.Stmt {
@@ -106,13 +121,13 @@ export class Parser {
 
   private returnStatement_(): Stmt.Stmt {
     const keyword: Token = this.previous_();
-    let value: Expr.Expr | undefined
-    if(!this.check_(TokenType.SEMICOLON)) {
-      value = this.expression_()
+    let value: Expr.Expr | undefined;
+    if (!this.check_(TokenType.SEMICOLON)) {
+      value = this.expression_();
     }
 
     this.consume_(TokenType.SEMICOLON, "Expect ';' after return value.");
-    return new Stmt.Return(keyword, value)
+    return new Stmt.Return(keyword, value);
   }
 
   private varDeclaration_(): Stmt.Stmt {
@@ -143,23 +158,23 @@ export class Parser {
   }
 
   private function_(kind: string): Stmt.Function {
-    const name: Token = this.consume_(TokenType.IDENTIFIER, `Expect ${kind} name.`)
+    const name: Token = this.consume_(TokenType.IDENTIFIER, `Expect ${kind} name.`);
     this.consume_(TokenType.LEFT_PAREN, `Expect ${kind} name.`);
-    const parameters: Token[] = []
-    if(!this.check_(TokenType.RIGHT_PAREN)) {
+    const parameters: Token[] = [];
+    if (!this.check_(TokenType.RIGHT_PAREN)) {
       do {
         if (parameters.length >= 8) {
-          this.error_(this.peek_(), "Cannot have more than 8 parameters.")
+          this.error_(this.peek_(), 'Cannot have more than 8 parameters.');
         }
 
-        parameters.push(this.consume_(TokenType.IDENTIFIER, 'Expect parameter name.'))
-      } while(this.match_(TokenType.COMMA))
+        parameters.push(this.consume_(TokenType.IDENTIFIER, 'Expect parameter name.'));
+      } while (this.match_(TokenType.COMMA));
     }
     this.consume_(TokenType.RIGHT_PAREN, "Expect ')' after parameters.");
 
-    this.consume_(TokenType.LEFT_BRACE, `Expect '{' before ${kind} body`)
-    const body: (Stmt.Stmt| null)[] = this.block_()
-    return new Stmt.Function(name, parameters, body)
+    this.consume_(TokenType.LEFT_BRACE, `Expect '{' before ${kind} body`);
+    const body: (Stmt.Stmt | null)[] = this.block_();
+    return new Stmt.Function(name, parameters, body);
   }
 
   private block_(): (Stmt.Stmt | null)[] {
@@ -183,6 +198,9 @@ export class Parser {
       if (expr instanceof Expr.Variable) {
         const name: Token = expr.name;
         return new Expr.Assign(name, value);
+      } else if (expr instanceof Expr.Get) {
+        const get: Expr.Get = expr;
+        return new Expr.Set(get.object, get.name, value)
       }
 
       this.error_(equals, 'Invalid assignement target.');
@@ -273,19 +291,19 @@ export class Parser {
   }
 
   private finishCall_(callee: Expr.Expr): Expr.Expr {
-    const args: Expr.Expr[] = []
-    if(!this.check_(TokenType.RIGHT_PAREN)) {
+    const args: Expr.Expr[] = [];
+    if (!this.check_(TokenType.RIGHT_PAREN)) {
       do {
         if (args.length >= 8) {
           this.error_(this.peek_(), 'Cannot have more than 8 arguments.');
         }
         args.push(this.expression_());
-      } while (this.match_(TokenType.COMMA))
+      } while (this.match_(TokenType.COMMA));
     }
 
     const paren = this.consume_(TokenType.RIGHT_PAREN, "Expect ')' after arguments.");
 
-    return new Expr.Call(callee, paren, args)
+    return new Expr.Call(callee, paren, args);
   }
 
   private call_(): Expr.Expr {
@@ -294,6 +312,9 @@ export class Parser {
     while (true) {
       if (this.match_(TokenType.LEFT_PAREN)) {
         expr = this.finishCall_(expr);
+      } else if (this.match_(TokenType.DOT)) {
+        const name: Token = this.consume_(TokenType.IDENTIFIER, "Expect property name after '.'.");
+        expr = new Expr.Get(expr, name);
       } else {
         break;
       }
@@ -309,6 +330,10 @@ export class Parser {
 
     if (this.match_(TokenType.NUMBER, TokenType.STRING)) {
       return new Expr.Literal(this.previous_().literal);
+    }
+
+    if (this.match_(TokenType.THIS)) {
+      return new Expr.This(this.previous_());
     }
 
     if (this.match_(TokenType.IDENTIFIER)) {

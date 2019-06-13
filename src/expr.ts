@@ -4,9 +4,12 @@ export interface Visitor<R> {
   visitAssignExpr(expr: Assign): R;
   visitBinaryExpr(expr: Binary): R;
   visitCallExpr(expr: Call): R;
+  visitGetExpr(expr: Get): R;
   visitGroupingExpr(expr: Grouping): R;
   visitLiteralExpr(expr: Literal): R;
   visitLogicalExpr(expr: Logical): R;
+  visitSetExpr(expr: Set): R;
+  visitThisExpr(expr: This): R;
   visitUnaryExpr(expr: Unary): R;
   visitVariableExpr(expr: Variable): R;
 }
@@ -46,6 +49,16 @@ export class Call extends Expr {
   }
 }
 
+export class Get extends Expr {
+  constructor(readonly object: Expr, readonly name: Token) {
+    super();
+  }
+
+  accept<R>(visitor: Visitor<R>): R {     
+      return visitor.visitGetExpr(this);
+  }
+}
+
 export class Grouping extends Expr {
   constructor(readonly expression: Expr) {
     super();
@@ -77,6 +90,26 @@ export class Logical extends Expr {
 
   accept<R>(visitor: Visitor<R>): R {     
       return visitor.visitLogicalExpr(this);
+  }
+}
+
+export class Set extends Expr {
+  constructor(readonly object: Expr, readonly name: Token, readonly value: Expr) {
+    super();
+  }
+
+  accept<R>(visitor: Visitor<R>): R {     
+      return visitor.visitSetExpr(this);
+  }
+}
+
+export class This extends Expr {
+  constructor(readonly keyword: Token) {
+    super();
+  }
+
+  accept<R>(visitor: Visitor<R>): R {     
+      return visitor.visitThisExpr(this);
   }
 }
 

@@ -11,16 +11,20 @@ class GenerateAst {
     GenerateAst.defineAst_(outputDir, 'Expr', [
       'Assign   - readonly name: Token, readonly value: Expr',
       'Binary   - readonly left: Expr, readonly operator: Token, readonly right: Expr',
-      'Call    - readonly callee: Expr, readonly paren: Token, readonly args: Expr[]',
+      'Call     - readonly callee: Expr, readonly paren: Token, readonly args: Expr[]',
+      'Get      - readonly object: Expr, readonly name: Token',
       'Grouping - readonly expression: Expr',
       'Literal  - readonly value: any',
       'Logical  - readonly left: Expr, readonly operator: Token, readonly right: Expr',
+      'Set      - readonly object: Expr, readonly name: Token, readonly value: Expr',
+      'This     - readonly keyword: Token',
       'Unary    - readonly operator: Token, readonly right: Expr',
       'Variable - readonly name: Token'
     ]);
 
     GenerateAst.defineAst_(outputDir, 'Stmt', [
       'Block      - readonly statements: (Stmt | null)[]',
+      'Class      - readonly name: Token, readonly methods: Function[]',
       'Expression - readonly expression: Expr',
       'Function   - readonly name: Token, readonly params: Token[], readonly body: (Stmt | null)[]',
       'If         - readonly condition: Expr, readonly thenBranch: Stmt, readonly elseBranch?: Stmt',

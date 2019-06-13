@@ -1,13 +1,15 @@
+import { Environment } from './environment';
 import * as Expr from './expr';
 import { Lox } from './lox';
+import { LoxCallable } from './lox-callable';
+import { LoxClass } from './lox-class';
+import { LoxFunction } from './lox-function';
+import { Return } from './return';
 import { RuntimeError } from './runtime-error';
 import * as Stmt from './stmt';
 import { Token } from './token';
 import { TokenType } from './token-type';
-import { Environment } from './environment';
-import { LoxCallable } from './lox-callable';
-import { LoxFunction } from './lox-function';
-import { Return } from './return';
+import { LoxInstance } from './lox-instance';
 
 export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
   readonly globals: Environment = new Environment();
@@ -57,6 +59,22 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
     }
 
     return this.evaluate_(expr.right);
+  }
+
+  visitSetExpr(expr: Expr.Set): any {
+    const object: any = this.evaluate_(expr.object);
+
+    if (!(object instanceof LoxInstance)) {
+      throw new RuntimeError(expr.name, 'Only instances have fields.');
+    }
+
+    const value: any = this.evaluate_(expr.value);
+    (<LoxInstance>object).set(expr.name, value);
+    return value;
+  }
+
+  visitThisExpr(expr: Expr.This): any {
+    return this.lookUpVariable_(expr.keyword, expr);
   }
 
   visitUnaryExpr(expr: Expr.Unary): any {
@@ -158,13 +176,26 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
     return null;
   }
 
+  visitClassStmt(stmt: Stmt.Class): null {
+    this.environment_.define(stmt.name.lexeme, null);
+    const methods: Map<string, LoxFunction> = new Map();
+    for (const method of stmt.methods) {
+      const func = new LoxFunction(method, this.environment_, method.name.lexeme === 'init');
+      methods.set(method.name.lexeme, func);
+    }
+
+    const klass: LoxClass = new LoxClass(stmt.name.lexeme, methods);
+    this.environment_.assign(stmt.name, klass);
+    return null;
+  }
+
   visitExpressionStmt(stmt: Stmt.Expression): null {
     this.evaluate_(stmt.expression);
     return null;
   }
 
   visitFunctionStmt(stmt: Stmt.Function): null {
-    const func = new LoxFunction(stmt, this.environment_);
+    const func = new LoxFunction(stmt, this.environment_, false);
     this.environment_.define(stmt.name.lexeme, func);
     return null;
   }
@@ -287,5 +318,14 @@ export class Interpreter implements Expr.Visitor<any>, Stmt.Visitor<void> {
     }
 
     return func.call(this, args);
+  }
+
+  visitGetExpr(expr: Expr.Get) {
+    const object: any = this.evaluate_(expr.object);
+    if (object instanceof LoxInstance) {
+      return object.get(expr.name);
+    }
+
+    throw new RuntimeError(expr.name, 'Only instances have properties.');
   }
 }

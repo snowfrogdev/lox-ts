@@ -1,14 +1,13 @@
 import { readFileSync } from 'fs';
 import readline from 'readline';
+import { Interpreter } from './interpreter';
+import { Parser } from './parser';
+import { Resolver } from './resolver';
+import { RuntimeError } from './runtime-error';
 import { Scanner } from './scanner';
+import { Stmt } from './stmt';
 import { Token } from './token';
 import { TokenType } from './token-type';
-import { Parser } from './parser';
-import { Expr } from './expr';
-import { RuntimeError } from './runtime-error';
-import { Interpreter } from './interpreter';
-import { Stmt } from './stmt';
-import { Resolver } from './resolver';
 
 export class Lox {
   private static readonly interpreter: Interpreter = new Interpreter();

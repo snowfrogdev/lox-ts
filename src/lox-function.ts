@@ -3,10 +3,21 @@ import * as Stmt from './stmt';
 import { Interpreter } from './interpreter';
 import { Environment } from './environment';
 import { Return } from './return';
+import { LoxInstance } from './lox-instance';
 
 export class LoxFunction extends LoxCallable {
-  constructor(private readonly declaration_: Stmt.Function, private readonly closure_: Environment) {
+  constructor(
+    private readonly declaration_: Stmt.Function,
+    private readonly closure_: Environment,
+    private readonly isInitializer_: boolean
+  ) {
     super();
+  }
+
+  bind(instance: LoxInstance): LoxFunction {
+    const environment: Environment = new Environment(this.closure_);
+    environment.define('this', instance);
+    return new LoxFunction(this.declaration_, environment, this.isInitializer_);
   }
 
   toString(): string {
@@ -26,10 +37,12 @@ export class LoxFunction extends LoxCallable {
     try {
       interpreter.executeBlock(this.declaration_.body, environment);
     } catch (returnValue) {
-      return (<Return>returnValue).value
+      if (this.isInitializer_) return this.closure_.getAt(0, 'this');
+      
+      return (<Return>returnValue).value;
     }
 
-    
+    if (this.isInitializer_) return this.closure_.getAt(0, 'this');
     return null;
   }
 }
